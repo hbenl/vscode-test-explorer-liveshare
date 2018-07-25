@@ -1,0 +1,48 @@
+{
+  "name": "vscode-share-test-explorer",
+  "displayName": "Test Explorer Live Share",
+  "description": "Use the Test Explorer in your Visual Studio Live Share sessions",
+  "author": "Holger Benl <hbenl@evandor.de>",
+  "publisher": "hbenl",
+  "version": "0.1.0",
+  "license": "MIT",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "test",
+    "testing",
+    "share"
+  ],
+  "main": "out/main.js",
+  "scripts": {
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "reinstall": "rimraf node_modules package-lock.json && npm install",
+    "clean": "rimraf out vscode-share-test-explorer-*.vsix",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "rebuild": "npm run clean && npm run build",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "extensionDependencies": [
+    "hbenl.vscode-test-explorer"
+  ],
+  "dependencies": {
+    "tslib": "^1.9.3",
+    "vscode-test-adapter-api": "^0.4.0",
+    "vsls": "^0.3.426"
+  },
+  "devDependencies": {
+    "typescript": "^2.9.2",
+    "vsce": "^1.44.0",
+    "vscode": "^1.1.18"
+  },
+  "engines": {
+    "vscode": "^1.25.0"
+  },
+  "activationEvents": [
+    "onView:test-explorer"
+  ],
+  "contributes": {}
+}
