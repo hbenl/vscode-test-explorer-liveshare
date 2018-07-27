@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
 import { TestExplorerExtension, TestController, TestAdapter } from 'vscode-test-adapter-api';
 import { Session, serviceName } from './sessionManager';
+import { Log } from './log';
 
 export class HostSession implements Session, TestController {
 
@@ -11,17 +11,17 @@ export class HostSession implements Session, TestController {
 	private nextAdapterId = 0;
 
 	constructor(
-		private readonly channel: vscode.OutputChannel,
 		private readonly testExplorer: TestExplorerExtension,
-		private readonly liveShare: vsls.LiveShare
+		private readonly liveShare: vsls.LiveShare,
+		private readonly log: Log
 	) {
-		this.channel.appendLine('Starting HostSession');
+		this.log.info('Starting HostSession');
 		this.init();
 	}
 
 	async init(): Promise<void> {
 
-		this.channel.appendLine('Sharing service');
+		this.log.info('Sharing service');
 		const service = await this.liveShare.shareService(serviceName);
 		if (service) {
 			this.sharedService = service;
@@ -40,7 +40,7 @@ export class HostSession implements Session, TestController {
 
 			this.testExplorer.registerController(this);
 		} else {
-			this.channel.appendLine('Sharing service failed');
+			this.log.error('Sharing service failed');
 		}
 	}
 

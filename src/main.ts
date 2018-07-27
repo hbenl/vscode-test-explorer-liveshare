@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { testExplorerExtensionId, TestExplorerExtension } from 'vscode-test-adapter-api';
 import * as vsls from 'vsls/vscode';
 import { SessionManager } from './sessionManager';
+import { Log } from './log';
 
 export function activate(context: vscode.ExtensionContext): void {
 	initAsync();
@@ -9,26 +10,26 @@ export function activate(context: vscode.ExtensionContext): void {
 
 async function initAsync(): Promise<void> {
 
-	const channel = vscode.window.createOutputChannel('Share Test Explorer');
+	const log = new Log('Share Test Explorer');
 
-	channel.appendLine('Looking for Test Explorer');
+	log.info('Looking for Test Explorer');
 
 	const testExplorerExt = vscode.extensions.getExtension<TestExplorerExtension>(testExplorerExtensionId);
 	const testExplorer = testExplorerExt ? testExplorerExt.exports : undefined;
 
-	channel.appendLine(`Test Explorer ${testExplorer ? '' : 'not '}found`);
+	log.info(`Test Explorer ${testExplorer ? '' : 'not '}found`);
 
 	if (!testExplorer) return;
 
-	channel.appendLine('Looking for VSLS');
+	log.info('Looking for VSLS');
 
 	const liveShare = await vsls.getApiAsync();
 
-	channel.appendLine(`VSLS ${liveShare ? '' : 'not '}found`);
+	log.info(`VSLS ${liveShare ? '' : 'not '}found`);
 
 	if (!liveShare) return;
 
-	const sessionManager = new SessionManager(channel, testExplorer, liveShare);
+	const sessionManager = new SessionManager(testExplorer, liveShare, log);
 
 	liveShare.onDidChangeSession(event => {
 		sessionManager.onSessionChanged(event.session);

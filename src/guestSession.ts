@@ -2,23 +2,24 @@ import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
 import { TestExplorerExtension, TestAdapter, TestSuiteInfo, TestInfo, TestEvent, TestSuiteEvent } from 'vscode-test-adapter-api';
 import { Session, serviceName } from './sessionManager';
+import { Log } from './log';
 
 export class GuestSession implements Session {
 
 	private adapters = new Map<number, TestAdapterProxy>();
 
 	constructor(
-		private readonly channel: vscode.OutputChannel,
 		private readonly testExplorer: TestExplorerExtension,
-		private readonly liveShare: vsls.LiveShare
+		private readonly liveShare: vsls.LiveShare,
+		private readonly log: Log
 	) {
-		this.channel.appendLine('Starting HostSession');
+		this.log.info('Starting HostSession');
 		this.init();
 	}
 
 	async init(): Promise<void> {
 
-		this.channel.appendLine('Getting shared service');
+		this.log.info('Getting shared service');
 		const service = await this.liveShare.getSharedService(serviceName);
 		if (service) {
 
@@ -37,7 +38,7 @@ export class GuestSession implements Session {
 				}
 			});
 		} else {
-			this.channel.appendLine('Getting shared service failed');
+			this.log.info('Getting shared service failed');
 		}
 	}
 
