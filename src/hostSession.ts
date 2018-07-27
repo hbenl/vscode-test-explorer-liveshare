@@ -27,15 +27,23 @@ export class HostSession implements Session, TestController {
 			this.sharedService = service;
 
 			this.sharedService.onRequest('load', (args) => {
+				this.log.debug('Received load request...');
 				this.adapterRequest(args, adapter => adapter.load());
 			});
 
 			this.sharedService.onRequest('run', (args) => {
+				this.log.debug('Received run request...');
 				this.adapterRequest(args, adapter => adapter.run(args[1]));
 			});
 
 			this.sharedService.onRequest('debug', (args) => {
+				this.log.debug('Received debug request...');
 				this.adapterRequest(args, adapter => adapter.debug(args[1]));
+			});
+
+			this.sharedService.onRequest('cancel', (args) => {
+				this.log.debug('Received cancel request...');
+				this.adapterRequest(args, adapter => adapter.cancel());
 			});
 
 			this.testExplorer.registerController(this);
@@ -65,17 +73,19 @@ export class HostSession implements Session, TestController {
 	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any) {
 
 		const adapterId = args[0];
-		if (typeof adapterId === 'number') {
-			const adapter = this.adapters.get(adapterId);
-			if (adapter) {
-				return action(adapter);
-			}
+		const adapter = this.adapters.get(adapterId);
+		if (adapter) {
+			this.log.debug(`...for adapter #${adapterId}`);
+			return action(adapter);
+		} else {
+			this.log.warn(`...for unknown adapter #${adapterId}`);
 		}
 
 		return undefined;
 	}
 
 	dispose(): void {
+		this.log.info('Disposing HostSession');
 		this.testExplorer.unregisterController(this);
 		this.liveShare.unshareService(serviceName);
 		this.sharedService = undefined;
