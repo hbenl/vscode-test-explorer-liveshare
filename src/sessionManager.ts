@@ -4,7 +4,7 @@ import { HostSession } from './hostSession';
 import { GuestSession } from './guestSession';
 import { Log } from './log';
 
-export const serviceName = 'hbenl.vscode-share-test-explorer';
+export const serviceName = 'test-explorer';
 
 export interface Session {
 	dispose(): void;
