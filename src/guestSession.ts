@@ -23,15 +23,17 @@ export class GuestSession implements Session {
 		const service = await this.liveShare.getSharedService(serviceName);
 		if (service) {
 
+			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
+
 			service.onNotify('registerAdapter', (args: { adapterId: number }) => {
-				this.log.debug(`Received registerAdapter notification: ${JSON.stringify(args)}`);
+				this.log.info(`Received registerAdapter notification: ${JSON.stringify(args)}`);
 				const adapterId = args.adapterId;
 				const adapter = new TestAdapterProxy(adapterId, this.testExplorer, service, this.log);
 				this.adapters.set(adapterId, adapter);
 			});
 
 			service.onNotify('unregisterAdapter', (args: { adapterId: number }) => {
-				this.log.debug(`Received unregisterAdapter notification: ${JSON.stringify(args)}`);
+				this.log.info(`Received unregisterAdapter notification: ${JSON.stringify(args)}`);
 				const adapterId = args.adapterId;
 				const adapter = this.adapters.get(adapterId);
 				if (adapter) {

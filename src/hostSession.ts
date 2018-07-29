@@ -26,6 +26,8 @@ export class HostSession implements Session, TestController {
 		if (service) {
 			this.sharedService = service;
 
+			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
+
 			this.sharedService.onRequest('load', (args) => {
 				this.log.debug('Received load request...');
 				this.adapterRequest(args, adapter => adapter.load());
@@ -54,20 +56,26 @@ export class HostSession implements Session, TestController {
 
 	registerAdapter(adapter: TestAdapter): void {
 		if (!this.sharedService) return;
+
 		const adapterId = this.nextAdapterId++;
+		this.log.info(`Registering Adapter #${adapterId}`);
 		this.adapters.set(adapterId, adapter);
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}
 
 	unregisterAdapter(adapter: TestAdapter): void {
 		if (!this.sharedService) return;
+
 		for (const [ adapterId, _adapter ] of this.adapters) {
 			if (_adapter === adapter) {
+				this.log.info(`Unregistering Adapter #${adapterId}`);
 				this.sharedService.notify('unregisterAdapter', { adapterId });
 				this.adapters.delete(adapterId);
 				return;
 			}
 		}
+
+		this.log.warn('Tried to unregister unknown Adapter');
 	}
 
 	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any) {
