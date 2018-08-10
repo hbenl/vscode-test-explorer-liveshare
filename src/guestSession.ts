@@ -73,6 +73,12 @@ class TestAdapterProxy implements TestAdapter {
 	) {
 		this.log.info(`Creating TestAdapterProxy #${adapterId}`);
 		this.testExplorer.registerAdapter(this);
+
+		this.sharedService.onNotify('testState', (args: { adapterId: number, event: TestSuiteEvent | TestEvent }) => {
+			if (args.adapterId === this.adapterId) {
+				this.testStatesEmitter.fire(args.event);
+			}
+		});
 	}
 
 	async load(): Promise<TestSuiteInfo | undefined> {

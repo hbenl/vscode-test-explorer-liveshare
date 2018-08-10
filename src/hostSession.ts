@@ -69,6 +69,9 @@ export class HostSession implements Session, TestController {
 		const adapterId = this.nextAdapterId++;
 		this.log.info(`Registering Adapter #${adapterId}`);
 		this.adapters.set(adapterId, adapter);
+
+		adapter.testStates(event => this.sharedService!.notify('testState', { adapterId, event }));
+
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}
 
