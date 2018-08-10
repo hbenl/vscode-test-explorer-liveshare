@@ -25,6 +25,13 @@ export class GuestSession implements Session {
 
 			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
 
+			const initialAdapters = await service.request('adapters', []);
+			this.log.info(`Received adapters response: ${JSON.stringify(initialAdapters)}`);
+			for (const adapterId of initialAdapters) {
+				const adapter = new TestAdapterProxy(adapterId, this.testExplorer, service, this.log);
+				this.adapters.set(adapterId, adapter);
+			}
+
 			service.onNotify('registerAdapter', (args: { adapterId: number }) => {
 				this.log.info(`Received registerAdapter notification: ${JSON.stringify(args)}`);
 				const adapterId = args.adapterId;

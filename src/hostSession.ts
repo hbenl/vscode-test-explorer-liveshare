@@ -28,6 +28,13 @@ export class HostSession implements Session, TestController {
 
 			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
 
+			this.sharedService.onRequest('adapters', () => {
+				this.log.debug('Received adapters request');
+				const adapters = [ ...this.adapters.keys() ];
+				this.log.debug(`Sending adapters response: ${JSON.stringify(adapters)}`);
+				return Promise.resolve(adapters);
+			});
+
 			this.sharedService.onRequest('load', (args) => {
 				this.log.debug('Received load request...');
 				this.adapterRequest(args, adapter => adapter.load());
