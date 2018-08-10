@@ -24,6 +24,7 @@ export class HostSession implements Session, TestController {
 		this.log.info('Sharing service');
 		const service = await this.liveShare.shareService(serviceName);
 		if (service) {
+
 			this.sharedService = service;
 
 			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
@@ -37,17 +38,17 @@ export class HostSession implements Session, TestController {
 
 			this.sharedService.onRequest('load', (args) => {
 				this.log.debug('Received load request...');
-				this.adapterRequest(args, adapter => adapter.load());
+				return this.adapterRequest(args, adapter => adapter.load());
 			});
 
 			this.sharedService.onRequest('run', (args) => {
 				this.log.debug('Received run request...');
-				this.adapterRequest(args, adapter => adapter.run(args[1]));
+				return this.adapterRequest(args, adapter => adapter.run(args[1]));
 			});
 
 			this.sharedService.onRequest('debug', (args) => {
 				this.log.debug('Received debug request...');
-				this.adapterRequest(args, adapter => adapter.debug(args[1]));
+				return this.adapterRequest(args, adapter => adapter.debug(args[1]));
 			});
 
 			this.sharedService.onRequest('cancel', (args) => {
@@ -56,6 +57,7 @@ export class HostSession implements Session, TestController {
 			});
 
 			this.testExplorer.registerController(this);
+
 		} else {
 			this.log.error('Sharing service failed');
 		}
@@ -85,7 +87,7 @@ export class HostSession implements Session, TestController {
 		this.log.warn('Tried to unregister unknown Adapter');
 	}
 
-	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any) {
+	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any): any {
 
 		const adapterId = args[0];
 		const adapter = this.adapters.get(adapterId);
