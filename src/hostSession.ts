@@ -1,5 +1,5 @@
 import * as vsls from 'vsls/vscode';
-import { TestExplorerExtension, TestController, TestAdapter } from 'vscode-test-adapter-api';
+import { TestExplorerExtension, TestController, TestAdapterDelegate } from 'vscode-test-adapter-api';
 import { Session, serviceName } from './sessionManager';
 import { Log } from './log';
 
@@ -7,7 +7,7 @@ export class HostSession implements Session, TestController {
 
 	private sharedService: vsls.SharedService | undefined;
 
-	private adapters = new Map<number, TestAdapter>();
+	private adapters = new Map<number, TestAdapterDelegate>();
 	private nextAdapterId = 0;
 
 	constructor(
@@ -63,19 +63,20 @@ export class HostSession implements Session, TestController {
 		}
 	}
 
-	registerAdapter(adapter: TestAdapter): void {
+	registerAdapterDelegate(adapter: TestAdapterDelegate): void {
 		if (!this.sharedService) return;
 
 		const adapterId = this.nextAdapterId++;
 		this.log.info(`Registering Adapter #${adapterId}`);
 		this.adapters.set(adapterId, adapter);
 
+		adapter.tests(event => this.sharedService!.notify('tests', { adapterId, event }))
 		adapter.testStates(event => this.sharedService!.notify('testState', { adapterId, event }));
 
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}
 
-	unregisterAdapter(adapter: TestAdapter): void {
+	unregisterAdapterDelegate(adapter: TestAdapterDelegate): void {
 		if (!this.sharedService) return;
 
 		for (const [ adapterId, _adapter ] of this.adapters) {
@@ -90,7 +91,7 @@ export class HostSession implements Session, TestController {
 		this.log.warn('Tried to unregister unknown Adapter');
 	}
 
-	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any): any {
+	private adapterRequest(args: any[], action: (adapter: TestAdapterDelegate) => any): any {
 
 		const adapterId = args[0];
 		const adapter = this.adapters.get(adapterId);
@@ -111,9 +112,3 @@ export class HostSession implements Session, TestController {
 		this.sharedService = undefined;
 	}
 }
-
-/*class AdapterConnection {
-	adapter: TestAdapter;
-	adapterId: number;
-	disposables: any[];
-}*/
