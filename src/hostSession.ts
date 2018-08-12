@@ -1,5 +1,6 @@
+import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
-import { TestExplorerExtension, TestController, TestAdapterDelegate } from 'vscode-test-adapter-api';
+import { TestExplorerExtension, TestController, TestAdapterDelegate, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent, TestSuiteInfo, TestInfo } from 'vscode-test-adapter-api';
 import { Session, serviceName } from './sessionManager';
 import { Log } from './log';
 
@@ -43,12 +44,12 @@ export class HostSession implements Session, TestController {
 
 			this.sharedService.onRequest('run', (args) => {
 				this.log.debug('Received run request...');
-				return this.adapterRequest(args, adapter => adapter.run(args[1]));
+				return this.adapterRequest(args, adapter => adapter.run(this.convertInfoFromGuest(args[1])));
 			});
 
 			this.sharedService.onRequest('debug', (args) => {
 				this.log.debug('Received debug request...');
-				return this.adapterRequest(args, adapter => adapter.debug(args[1]));
+				return this.adapterRequest(args, adapter => adapter.debug(this.convertInfoFromGuest(args[1])));
 			});
 
 			this.sharedService.onRequest('cancel', (args) => {
@@ -70,8 +71,8 @@ export class HostSession implements Session, TestController {
 		this.log.info(`Registering Adapter #${adapterId}`);
 		this.adapters.set(adapterId, adapter);
 
-		adapter.tests(event => this.sharedService!.notify('tests', { adapterId, event }))
-		adapter.testStates(event => this.sharedService!.notify('testState', { adapterId, event }));
+		adapter.tests(event => this.sharedService!.notify('tests', { adapterId, event: this.convertTestLoadEvent(event) }))
+		adapter.testStates(event => this.sharedService!.notify('testState', { adapterId, event: this.convertTestRunEvent(event) }));
 
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}
@@ -103,6 +104,37 @@ export class HostSession implements Session, TestController {
 		}
 
 		return undefined;
+	}
+
+	private convertTestLoadEvent(event: TestLoadStartedEvent | TestLoadFinishedEvent): TestLoadStartedEvent | TestLoadFinishedEvent {
+		if ((event.type === 'finished') && (event.suite)) {
+			return { ...event, suite: <TestSuiteInfo>this.convertInfo(event.suite) };
+		} else {
+			return event;
+		}
+	}
+
+	private convertTestRunEvent(event: TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent): any {
+		if (event.type === 'started') {
+			return { ...event, tests: this.convertInfo(event.tests) };
+		} else if ((event.type === 'suite') && (typeof event.suite === 'object')) {
+			return { ...event, suite: this.convertInfo(event.suite) };
+		} else if ((event.type === 'test') && (typeof event.test === 'object')) {
+			return { ...event, test: this.convertInfo(event.test) };
+		} else {
+			return event;
+		}
+	}
+
+	private convertInfo(info: TestSuiteInfo | TestInfo): TestSuiteInfo | TestInfo {
+		const file = info.file ? this.liveShare.convertLocalUriToShared(vscode.Uri.file(info.file)).toString() : undefined;
+		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfo(child)) : undefined;
+		return { ...<any>info, file, children };
+	}
+
+	private convertInfoFromGuest(info: TestSuiteInfo | TestInfo): TestSuiteInfo | TestInfo {
+		const file = info.file ? this.liveShare.convertSharedUriToLocal(vscode.Uri.parse(info.file)).path : undefined;
+		return { ...info, file };
 	}
 
 	dispose(): void {
