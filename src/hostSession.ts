@@ -134,7 +134,8 @@ export class HostSession implements Session, TestController {
 
 	private convertInfoFromGuest(info: TestSuiteInfo | TestInfo): TestSuiteInfo | TestInfo {
 		const file = info.file ? this.liveShare.convertSharedUriToLocal(vscode.Uri.parse(info.file)).path : undefined;
-		return { ...info, file };
+		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfoFromGuest(child)) : undefined;
+		return { ...<any>info, file, children };
 	}
 
 	dispose(): void {
