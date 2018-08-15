@@ -71,8 +71,15 @@ export class HostSession implements Session, TestController {
 		this.log.info(`Registering Adapter #${adapterId}`);
 		this.adapters.set(adapterId, adapter);
 
-		adapter.tests(event => this.sharedService!.notify('tests', { adapterId, event: this.convertTestLoadEvent(event) }))
-		adapter.testStates(event => this.sharedService!.notify('testState', { adapterId, event: this.convertTestRunEvent(event) }));
+		adapter.tests(event => {
+			this.log.info(`Passing on TestLoad event to Adapter #${adapterId}: ${JSON.stringify(event)}`);
+			this.sharedService!.notify('tests', { adapterId, event: this.convertTestLoadEvent(event) });
+		});
+
+		adapter.testStates(event => {
+			this.log.info(`Passing on TestRun event to Adapter #${adapterId}: ${JSON.stringify(event)}`);
+			this.sharedService!.notify('testState', { adapterId, event: this.convertTestRunEvent(event) });
+		});
 
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}

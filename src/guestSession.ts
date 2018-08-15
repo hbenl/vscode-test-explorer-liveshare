@@ -74,12 +74,14 @@ class TestAdapterProxy implements TestAdapterDelegate {
 
 		this.sharedService.onNotify('tests', (args: { adapterId: number, event: TestLoadStartedEvent | TestLoadFinishedEvent }) => {
 			if (args.adapterId === this.adapterId) {
+				this.log.debug(`Received TestLoad event for adapter #${this.adapterId}: ${JSON.stringify(args.event)}`);
 				this.testsEmitter.fire(args.event);
 			}
 		});
 
 		this.sharedService.onNotify('testState', (args: { adapterId: number, event: TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent }) => {
 			if (args.adapterId === this.adapterId) {
+				this.log.debug(`Received TestRun event for adapter #${this.adapterId}: ${JSON.stringify(args.event)}`);
 				this.testStatesEmitter.fire(args.event);
 			}
 		});
