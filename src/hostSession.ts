@@ -1,87 +1,76 @@
 import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
 import { TestExplorerExtension, TestController, TestAdapterDelegate, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent, TestSuiteInfo, TestInfo } from 'vscode-test-adapter-api';
-import { Session, serviceName } from './sessionManager';
 import { Log } from './log';
 
-export class HostSession implements Session, TestController {
-
-	private sharedService: vsls.SharedService | undefined;
+export class HostSessionManager implements TestController {
 
 	private adapters = new Map<number, TestAdapterDelegate>();
-	private nextAdapterId = 0;
+	private adapterSubscriptions = new Map<number, vscode.Disposable[]>();
 	private tests = new Map<number, TestSuiteInfo | undefined>();
+	private nextAdapterId = 0;
 
 	constructor(
+		context: vscode.ExtensionContext,
 		private readonly testExplorer: TestExplorerExtension,
 		private readonly liveShare: vsls.LiveShare,
+		private readonly sharedService: vsls.SharedService,
 		private readonly log: Log
 	) {
-		this.log.info('Starting HostSession');
-		this.init();
-	}
 
-	async init(): Promise<void> {
+		this.sharedService.onRequest('adapters', () => {
+			this.log.debug('Received adapters request');
 
-		this.log.info('Sharing service');
-		const service = await this.liveShare.shareService(serviceName);
-		if (service) {
-
-			this.sharedService = service;
-
-			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
-
-			this.sharedService.onRequest('adapters', () => {
-				this.log.debug('Received adapters request');
-
-				const adapterIds = [ ...this.adapters.keys() ];
-				const response = adapterIds.map(adapterId => {
-					if (this.tests.has(adapterId)) {
-						return { adapterId, tests: this.tests.get(adapterId) }
-					} else {
-						return { adapterId };
-					}
-				});
-
-				this.log.debug(`Sending adapters response: ${JSON.stringify(response)}`);
-				return Promise.resolve(response);
+			const adapterIds = [ ...this.adapters.keys() ];
+			const response = adapterIds.map(adapterId => {
+				if (this.tests.has(adapterId)) {
+					return { adapterId, tests: this.tests.get(adapterId) }
+				} else {
+					return { adapterId };
+				}
 			});
 
-			this.sharedService.onRequest('load', (dummy, args) => {
-				this.log.debug('Received load request...');
-				return this.adapterRequest(<any>args, adapter => adapter.load());
-			});
+			this.log.debug(`Sending adapters response: ${JSON.stringify(response)}`);
+			return response;
+		});
 
-			this.sharedService.onRequest('run', (dummy, args) => {
-				this.log.debug('Received run request...');
-				return this.adapterRequest(<any>args, adapter => adapter.run(this.convertInfoFromGuest((<any>args)[1])));
-			});
+		this.sharedService.onRequest('load', (dummy, args) => {
+			this.log.debug('Received load request...');
+			return this.adapterRequest(<any>args, adapter => adapter.load());
+		});
 
-			this.sharedService.onRequest('debug', (dummy, args) => {
-				this.log.debug('Received debug request...');
-				return this.adapterRequest(<any>args, adapter => adapter.debug(this.convertInfoFromGuest((<any>args)[1])));
-			});
+		this.sharedService.onRequest('run', (dummy, args) => {
+			this.log.debug('Received run request...');
+			return this.adapterRequest(<any>args, adapter => adapter.run(this.convertInfoFromGuest((<any>args)[1])));
+		});
 
-			this.sharedService.onRequest('cancel', (dummy, args) => {
-				this.log.debug('Received cancel request...');
-				this.adapterRequest(<any>args, adapter => adapter.cancel());
-			});
+		this.sharedService.onRequest('debug', (dummy, args) => {
+			this.log.debug('Received debug request...');
+			return this.adapterRequest(<any>args, adapter => adapter.debug(this.convertInfoFromGuest((<any>args)[1])));
+		});
 
-			this.testExplorer.registerController(this);
+		this.sharedService.onRequest('cancel', (dummy, args) => {
+			this.log.debug('Received cancel request...');
+			this.adapterRequest(<any>args, adapter => adapter.cancel());
+		});
 
-		} else {
-			this.log.error('Sharing service failed');
+		if (sharedService.isServiceAvailable) {
+			this.startSession();
 		}
+		context.subscriptions.push(sharedService.onDidChangeIsServiceAvailable(available => {
+			available ? this.startSession() : this.endSession();
+		}));
 	}
 
 	registerAdapterDelegate(adapter: TestAdapterDelegate): void {
-		if (!this.sharedService) return;
 
 		const adapterId = this.nextAdapterId++;
 		this.log.info(`Registering Adapter #${adapterId}`);
 		this.adapters.set(adapterId, adapter);
 
-		adapter.tests(event => {
+		const subscriptions: vscode.Disposable[] = [];
+
+		subscriptions.push(adapter.tests(event => {
 
 			const convertedEvent = this.convertTestLoadEvent(event);
 
@@ -92,31 +81,49 @@ export class HostSession implements Session, TestController {
 			}
 
 			this.log.info(`Passing on TestLoad event for Adapter #${adapterId}: ${JSON.stringify(event)}`);
-			this.sharedService!.notify('tests', { adapterId, event: convertedEvent });
-		});
+			this.sharedService.notify('tests', { adapterId, event: convertedEvent });
+		}));
 
-		adapter.testStates(event => {
+		subscriptions.push(adapter.testStates(event => {
 			this.log.info(`Passing on TestRun event for Adapter #${adapterId}: ${JSON.stringify(event)}`);
-			this.sharedService!.notify('testState', { adapterId, event: this.convertTestRunEvent(event) });
-		});
+			this.sharedService.notify('testState', { adapterId, event: this.convertTestRunEvent(event) });
+		}));
+
+		this.adapterSubscriptions.set(adapterId, subscriptions);
 
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}
 
 	unregisterAdapterDelegate(adapter: TestAdapterDelegate): void {
-		if (!this.sharedService) return;
 
 		for (const [ adapterId, _adapter ] of this.adapters) {
 			if (_adapter === adapter) {
 				this.log.info(`Unregistering Adapter #${adapterId}`);
+
 				this.sharedService.notify('unregisterAdapter', { adapterId });
+
+				const subscriptions = this.adapterSubscriptions.get(adapterId);
+				if (subscriptions) {
+					subscriptions.forEach(subscription => subscription.dispose());
+				}
+
 				this.adapters.delete(adapterId);
+				this.adapterSubscriptions.delete(adapterId);
 				this.tests.delete(adapterId);
+
 				return;
 			}
 		}
 
 		this.log.warn('Tried to unregister unknown Adapter');
+	}
+
+	private startSession(): void {
+		this.testExplorer.registerController(this);
+	}
+
+	private endSession(): void {
+		this.testExplorer.unregisterController(this);
 	}
 
 	private adapterRequest(args: any[], action: (adapter: TestAdapterDelegate) => any): any {
@@ -163,12 +170,5 @@ export class HostSession implements Session, TestController {
 		const file = info.file ? this.liveShare.convertSharedUriToLocal(vscode.Uri.parse(info.file)).path : undefined;
 		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfoFromGuest(child)) : undefined;
 		return { ...<any>info, file, children };
-	}
-
-	dispose(): void {
-		this.log.info('Disposing HostSession');
-		this.testExplorer.unregisterController(this);
-		this.liveShare.unshareService(serviceName);
-		this.sharedService = undefined;
 	}
 }
