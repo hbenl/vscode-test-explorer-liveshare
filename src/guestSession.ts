@@ -25,12 +25,19 @@ export class GuestSession implements Session {
 
 			this.log.info(`sharedService is ${service.isServiceAvailable ? '' : 'not '}available`);
 
-			const initialAdapters = await service.request('adapters', []);
+			const initialAdapters: { adapterId: number, tests?: TestSuiteInfo }[] = await service.request('adapters', []);
 			this.log.info(`Received adapters response: ${JSON.stringify(initialAdapters)}`);
-			for (const adapterId of initialAdapters) {
-				const proxy = new TestAdapterProxy(adapterId, service, this.log);
-				this.adapterProxies.set(adapterId, proxy);
+
+			for (const adapter of initialAdapters) {
+
+				const proxy = new TestAdapterProxy(adapter.adapterId, service, this.log);
+				this.adapterProxies.set(adapter.adapterId, proxy);
 				this.testExplorer.registerAdapterDelegate(proxy);
+
+				proxy.testsEmitter.fire({ type: 'started' });
+				if (adapter.hasOwnProperty('tests')) {
+					proxy.testsEmitter.fire({ type: 'finished', suite: adapter.tests });
+				}
 			}
 
 			service.onNotify('registerAdapter', (args: { adapterId: number }) => {
@@ -62,7 +69,7 @@ export class GuestSession implements Session {
 
 class TestAdapterProxy implements TestAdapterDelegate {
 
-	private readonly testsEmitter = new vscode.EventEmitter<TestLoadStartedEvent | TestLoadFinishedEvent>();
+	public readonly testsEmitter = new vscode.EventEmitter<TestLoadStartedEvent | TestLoadFinishedEvent>();
 	private readonly testStatesEmitter = new vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>();
 
 	constructor(

@@ -10,6 +10,7 @@ export class HostSession implements Session, TestController {
 
 	private adapters = new Map<number, TestAdapterDelegate>();
 	private nextAdapterId = 0;
+	private tests = new Map<number, TestSuiteInfo | undefined>();
 
 	constructor(
 		private readonly testExplorer: TestExplorerExtension,
@@ -32,9 +33,18 @@ export class HostSession implements Session, TestController {
 
 			this.sharedService.onRequest('adapters', () => {
 				this.log.debug('Received adapters request');
-				const adapters = [ ...this.adapters.keys() ];
-				this.log.debug(`Sending adapters response: ${JSON.stringify(adapters)}`);
-				return Promise.resolve(adapters);
+
+				const adapterIds = [ ...this.adapters.keys() ];
+				const response = adapterIds.map(adapterId => {
+					if (this.tests.has(adapterId)) {
+						return { adapterId, tests: this.tests.get(adapterId) }
+					} else {
+						return { adapterId };
+					}
+				});
+
+				this.log.debug(`Sending adapters response: ${JSON.stringify(response)}`);
+				return Promise.resolve(response);
 			});
 
 			this.sharedService.onRequest('load', (dummy, args) => {
@@ -72,12 +82,21 @@ export class HostSession implements Session, TestController {
 		this.adapters.set(adapterId, adapter);
 
 		adapter.tests(event => {
-			this.log.info(`Passing on TestLoad event to Adapter #${adapterId}: ${JSON.stringify(event)}`);
-			this.sharedService!.notify('tests', { adapterId, event: this.convertTestLoadEvent(event) });
+
+			const convertedEvent = this.convertTestLoadEvent(event);
+
+			if (convertedEvent.type === 'started') {
+				this.tests.delete(adapterId);
+			} else { // convertedEvent.type === 'finished'
+				this.tests.set(adapterId, convertedEvent.suite);
+			}
+
+			this.log.info(`Passing on TestLoad event for Adapter #${adapterId}: ${JSON.stringify(event)}`);
+			this.sharedService!.notify('tests', { adapterId, event: convertedEvent });
 		});
 
 		adapter.testStates(event => {
-			this.log.info(`Passing on TestRun event to Adapter #${adapterId}: ${JSON.stringify(event)}`);
+			this.log.info(`Passing on TestRun event for Adapter #${adapterId}: ${JSON.stringify(event)}`);
 			this.sharedService!.notify('testState', { adapterId, event: this.convertTestRunEvent(event) });
 		});
 
@@ -92,6 +111,7 @@ export class HostSession implements Session, TestController {
 				this.log.info(`Unregistering Adapter #${adapterId}`);
 				this.sharedService.notify('unregisterAdapter', { adapterId });
 				this.adapters.delete(adapterId);
+				this.tests.delete(adapterId);
 				return;
 			}
 		}
