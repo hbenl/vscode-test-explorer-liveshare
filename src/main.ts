@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { testExplorerExtensionId, TestExplorerExtension } from 'vscode-test-adapter-api';
+import { testExplorerExtensionId, TestHub } from 'vscode-test-adapter-api';
 import * as vsls from 'vsls/vscode';
 import { Log } from './log';
 import { HostSessionManager } from './hostSession';
@@ -16,7 +16,7 @@ async function activateAsync(context: vscode.ExtensionContext): Promise<void> {
 	const log = new Log('Test Explorer Live Share');
 
 	log.info('Looking for Test Explorer');
-	const testExplorerExt = vscode.extensions.getExtension<TestExplorerExtension>(testExplorerExtensionId);
+	const testExplorerExt = vscode.extensions.getExtension<TestHub>(testExplorerExtensionId);
 	const testExplorer = testExplorerExt ? testExplorerExt.exports : undefined;
 	log.info(`Test Explorer ${testExplorer ? '' : 'not '}found`);
 	if (!testExplorer) return;

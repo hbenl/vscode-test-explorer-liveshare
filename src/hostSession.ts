@@ -1,18 +1,18 @@
 import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
-import { TestExplorerExtension, TestController, TestAdapterDelegate, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent, TestSuiteInfo, TestInfo } from 'vscode-test-adapter-api';
+import { TestHub, TestController, TestAdapter, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent, TestSuiteInfo, TestInfo } from 'vscode-test-adapter-api';
 import { Log } from './log';
 
 export class HostSessionManager implements TestController {
 
-	private adapters = new Map<number, TestAdapterDelegate>();
+	private adapters = new Map<number, TestAdapter>();
 	private adapterSubscriptions = new Map<number, vscode.Disposable[]>();
 	private tests = new Map<number, TestSuiteInfo | undefined>();
 	private nextAdapterId = 0;
 
 	constructor(
 		context: vscode.ExtensionContext,
-		private readonly testExplorer: TestExplorerExtension,
+		private readonly testHub: TestHub,
 		private readonly liveShare: vsls.LiveShare,
 		private readonly sharedService: vsls.SharedService,
 		private readonly log: Log
@@ -62,7 +62,7 @@ export class HostSessionManager implements TestController {
 		}));
 	}
 
-	registerAdapterDelegate(adapter: TestAdapterDelegate): void {
+	registerTestAdapter(adapter: TestAdapter): void {
 
 		const adapterId = this.nextAdapterId++;
 		this.log.info(`Registering Adapter #${adapterId}`);
@@ -94,7 +94,7 @@ export class HostSessionManager implements TestController {
 		this.sharedService.notify('registerAdapter', { adapterId });
 	}
 
-	unregisterAdapterDelegate(adapter: TestAdapterDelegate): void {
+	unregisterTestAdapter(adapter: TestAdapter): void {
 
 		for (const [ adapterId, _adapter ] of this.adapters) {
 			if (_adapter === adapter) {
@@ -119,14 +119,14 @@ export class HostSessionManager implements TestController {
 	}
 
 	private startSession(): void {
-		this.testExplorer.registerController(this);
+		this.testHub.registerTestController(this);
 	}
 
 	private endSession(): void {
-		this.testExplorer.unregisterController(this);
+		this.testHub.unregisterTestController(this);
 	}
 
-	private adapterRequest(args: any[], action: (adapter: TestAdapterDelegate) => any): any {
+	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any): any {
 
 		const adapterId = args[0];
 		const adapter = this.adapters.get(adapterId);

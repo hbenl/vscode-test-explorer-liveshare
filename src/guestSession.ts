@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
-import { TestExplorerExtension, TestSuiteInfo, TestInfo, TestEvent, TestSuiteEvent, TestAdapterDelegate, TestRunStartedEvent, TestRunFinishedEvent, TestLoadStartedEvent, TestLoadFinishedEvent } from 'vscode-test-adapter-api';
+import { TestHub, TestSuiteInfo, TestInfo, TestEvent, TestSuiteEvent, TestAdapter, TestRunStartedEvent, TestRunFinishedEvent, TestLoadStartedEvent, TestLoadFinishedEvent } from 'vscode-test-adapter-api';
 import { Log } from './log';
 
 export class GuestSessionManager {
@@ -9,7 +9,7 @@ export class GuestSessionManager {
 
 	constructor(
 		context: vscode.ExtensionContext,
-		private readonly testExplorer: TestExplorerExtension,
+		private readonly testHub: TestHub,
 		private readonly sharedServiceProxy: vsls.SharedServiceProxy,
 		private readonly log: Log
 	) {
@@ -19,7 +19,7 @@ export class GuestSessionManager {
 			const adapterId = args.adapterId;
 			const proxy = new TestAdapterProxy(adapterId, sharedServiceProxy, this.log);
 			this.adapterProxies.set(adapterId, proxy);
-			this.testExplorer.registerAdapterDelegate(proxy);
+			this.testHub.registerTestAdapter(proxy);
 		});
 
 		sharedServiceProxy.onNotify('unregisterAdapter', (args: { adapterId: number }) => {
@@ -27,7 +27,7 @@ export class GuestSessionManager {
 			const adapterId = args.adapterId;
 			const proxy = this.adapterProxies.get(adapterId);
 			if (proxy) {
-				this.testExplorer.unregisterAdapterDelegate(proxy);
+				this.testHub.unregisterTestAdapter(proxy);
 				this.adapterProxies.delete(adapterId);
 			}
 		});
@@ -65,7 +65,7 @@ export class GuestSessionManager {
 
 			const proxy = new TestAdapterProxy(adapter.adapterId, this.sharedServiceProxy, this.log);
 			this.adapterProxies.set(adapter.adapterId, proxy);
-			this.testExplorer.registerAdapterDelegate(proxy);
+			this.testHub.registerTestAdapter(proxy);
 
 			proxy.testsEmitter.fire({ type: 'started' });
 			if (adapter.hasOwnProperty('tests')) {
@@ -76,13 +76,13 @@ export class GuestSessionManager {
 
 	private endSession(): void {
 		this.adapterProxies.forEach(proxy => {
-			this.testExplorer.unregisterAdapterDelegate(proxy);
+			this.testHub.unregisterTestAdapter(proxy);
 		});
 		this.adapterProxies.clear();
 	}
 }
 
-class TestAdapterProxy implements TestAdapterDelegate {
+class TestAdapterProxy implements TestAdapter {
 
 	public readonly testsEmitter = new vscode.EventEmitter<TestLoadStartedEvent | TestLoadFinishedEvent>();
 	public readonly testStatesEmitter = new vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>();
