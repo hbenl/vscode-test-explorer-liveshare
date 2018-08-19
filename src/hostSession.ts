@@ -161,14 +161,34 @@ export class HostSessionManager implements TestController {
 	}
 
 	private convertInfo(info: TestSuiteInfo | TestInfo): TestSuiteInfo | TestInfo {
-		const file = info.file ? this.liveShare.convertLocalUriToShared(vscode.Uri.file(info.file)).toString() : undefined;
+
+		let file = info.file;
+		if (file) {
+			try {
+				file = this.liveShare.convertLocalUriToShared(vscode.Uri.file(file)).toString();
+			} catch (e) {
+				this.log.error(`Failed converting ${file} to shared URI: ${e}`);
+			}
+		}
+
 		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfo(child)) : undefined;
+
 		return { ...<any>info, file, children };
 	}
 
 	private convertInfoFromGuest(info: TestSuiteInfo | TestInfo): TestSuiteInfo | TestInfo {
-		const file = info.file ? this.liveShare.convertSharedUriToLocal(vscode.Uri.parse(info.file)).path : undefined;
+
+		let file = info.file;
+		if (file) {
+			try {
+				file = this.liveShare.convertSharedUriToLocal(vscode.Uri.parse(file)).path;
+			} catch (e) {
+				this.log.error(`Failed converting shared URI ${file}: ${e}`);
+			}
+		}
+
 		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfoFromGuest(child)) : undefined;
+
 		return { ...<any>info, file, children };
 	}
 }
