@@ -2,6 +2,7 @@
   "name": "vscode-test-explorer-liveshare",
   "displayName": "Test Explorer Live Share",
   "description": "Use the Test Explorer in your Visual Studio Live Share sessions",
+  "icon": "icon.png",
   "author": "Holger Benl <hbenl@evandor.de>",
   "publisher": "hbenl",
   "version": "0.1.0",
