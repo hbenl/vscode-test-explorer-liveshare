@@ -34,24 +34,24 @@ export class HostSessionManager implements TestController {
 			return response;
 		});
 
-		this.sharedService.onRequest('load', (dummy, args) => {
+		this.sharedService.onRequest('load', (args) => {
 			this.log.debug('Received load request...');
-			return this.adapterRequest(<any>args, adapter => adapter.load());
+			return this.adapterRequest(args, adapter => adapter.load());
 		});
 
-		this.sharedService.onRequest('run', (dummy, args) => {
+		this.sharedService.onRequest('run', (args) => {
 			this.log.debug('Received run request...');
-			return this.adapterRequest(<any>args, adapter => adapter.run(this.convertInfoFromGuest((<any>args)[1])));
+			return this.adapterRequest(args, adapter => adapter.run(this.convertInfoFromGuest(args[1])));
 		});
 
-		this.sharedService.onRequest('debug', (dummy, args) => {
+		this.sharedService.onRequest('debug', (args) => {
 			this.log.debug('Received debug request...');
-			return this.adapterRequest(<any>args, adapter => adapter.debug(this.convertInfoFromGuest((<any>args)[1])));
+			return this.adapterRequest(args, adapter => adapter.debug(this.convertInfoFromGuest(args[1])));
 		});
 
-		this.sharedService.onRequest('cancel', (dummy, args) => {
+		this.sharedService.onRequest('cancel', (args) => {
 			this.log.debug('Received cancel request...');
-			this.adapterRequest(<any>args, adapter => adapter.cancel());
+			this.adapterRequest(args, adapter => adapter.cancel());
 		});
 
 		if (sharedService.isServiceAvailable) {
