@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as vsls from 'vsls/vscode';
-import { TestHub, TestSuiteInfo, TestInfo, TestEvent, TestSuiteEvent, TestAdapter, TestRunStartedEvent, TestRunFinishedEvent, TestLoadStartedEvent, TestLoadFinishedEvent } from 'vscode-test-adapter-api';
+import { TestHub, TestSuiteInfo, TestEvent, TestSuiteEvent, TestAdapter, TestRunStartedEvent, TestRunFinishedEvent, TestLoadStartedEvent, TestLoadFinishedEvent } from 'vscode-test-adapter-api';
 import { Log } from './log';
 
 export class GuestSessionManager {
@@ -98,12 +98,12 @@ class TestAdapterProxy implements TestAdapter {
 		return this.sharedService.request('load', [ this.adapterId ]);
 	}
 
-	async run(tests: TestSuiteInfo | TestInfo): Promise<void> {
+	async run(tests: string[]): Promise<void> {
 		this.log.debug(`Passing on run request for adapter #${this.adapterId}`);
 		return this.sharedService.request('run', [ this.adapterId, tests ]);
 	}
 
-	async debug(tests: TestSuiteInfo | TestInfo): Promise<void> {
+	async debug(tests: string[]): Promise<void> {
 		this.log.debug(`Passing on debug request for adapter #${this.adapterId}`);
 		return this.sharedService.request('debug', [ this.adapterId, tests ]);
 	}

@@ -41,12 +41,12 @@ export class HostSessionManager implements TestController {
 
 		this.sharedService.onRequest('run', (args) => {
 			this.log.debug('Received run request...');
-			return this.adapterRequest(args, adapter => adapter.run(this.convertInfoFromGuest(args[1])));
+			return this.adapterRequest(args, adapter => adapter.run(args[1]));
 		});
 
 		this.sharedService.onRequest('debug', (args) => {
 			this.log.debug('Received debug request...');
-			return this.adapterRequest(args, adapter => adapter.debug(this.convertInfoFromGuest(args[1])));
+			return this.adapterRequest(args, adapter => adapter.debug(args[1]));
 		});
 
 		this.sharedService.onRequest('cancel', (args) => {
@@ -172,22 +172,6 @@ export class HostSessionManager implements TestController {
 		}
 
 		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfo(child)) : undefined;
-
-		return { ...<any>info, file, children };
-	}
-
-	private convertInfoFromGuest(info: TestSuiteInfo | TestInfo): TestSuiteInfo | TestInfo {
-
-		let file = info.file;
-		if (file) {
-			try {
-				file = this.liveShare.convertSharedUriToLocal(vscode.Uri.parse(file)).path;
-			} catch (e) {
-				this.log.error(`Failed converting shared URI ${file}: ${e}`);
-			}
-		}
-
-		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfoFromGuest(child)) : undefined;
 
 		return { ...<any>info, file, children };
 	}
