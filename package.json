@@ -1,18 +1,28 @@
 {
-  "name": "vscode-share-test-explorer",
+  "name": "vscode-test-explorer-liveshare",
   "displayName": "Test Explorer Live Share",
   "description": "Use the Test Explorer in your Visual Studio Live Share sessions",
   "author": "Holger Benl <hbenl@evandor.de>",
   "publisher": "hbenl",
   "version": "0.1.0",
   "license": "MIT",
+  "homepage": "https://github.com/hbenl/vscode-test-explorer-liveshare",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hbenl/vscode-test-explorer-liveshare.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hbenl/vscode-test-explorer-liveshare/issues"
+  },
   "categories": [
     "Other"
   ],
   "keywords": [
     "test",
     "testing",
-    "share"
+    "collaboration",
+    "remote",
+    "sharing"
   ],
   "main": "out/main.js",
   "scripts": {
@@ -26,7 +36,8 @@
     "publish": "vsce publish"
   },
   "extensionDependencies": [
-    "hbenl.vscode-test-explorer"
+    "hbenl.vscode-test-explorer",
+    "ms-vsliveshare.vsliveshare"
   ],
   "dependencies": {
     "tslib": "^1.9.3",
