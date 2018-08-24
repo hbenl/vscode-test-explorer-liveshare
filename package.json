@@ -54,7 +54,7 @@
     "vscode": "^1.25.0"
   },
   "activationEvents": [
-    "onView:test-explorer"
+    "*"
   ],
   "contributes": {}
 }
