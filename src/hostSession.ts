@@ -119,11 +119,13 @@ export class HostSessionManager implements TestController {
 	}
 
 	private startSession(): void {
+		this.log.info('Starting Host session');
 		this.testHub.registerTestController(this);
 	}
 
 	private endSession(): void {
 		this.testHub.unregisterTestController(this);
+		this.log.info('Host session finished');
 	}
 
 	private adapterRequest(args: any[], action: (adapter: TestAdapter) => any): any {

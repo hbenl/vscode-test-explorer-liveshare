@@ -29,6 +29,8 @@ export class GuestSessionManager {
 			if (proxy) {
 				this.testHub.unregisterTestAdapter(proxy);
 				this.adapterProxies.delete(adapterId);
+			} else {
+				this.log.warn('Tried to unregister unknown adapter');
 			}
 		});
 
@@ -37,6 +39,8 @@ export class GuestSessionManager {
 			const proxy = this.adapterProxies.get(args.adapterId);
 			if (proxy) {
 				proxy.testsEmitter.fire(args.event);
+			} else {
+				this.log.warn('The TestLoad event was sent by an unknown adapter');
 			}
 		});
 
@@ -45,6 +49,8 @@ export class GuestSessionManager {
 			const proxy = this.adapterProxies.get(args.adapterId);
 			if (proxy) {
 				proxy.testStatesEmitter.fire(args.event);
+			} else {
+				this.log.warn('The TestRun event was sent by an unknown adapter');
 			}
 		});
 
@@ -57,6 +63,8 @@ export class GuestSessionManager {
 	}
 
 	private async startSession(): Promise<void> {
+
+		this.log.info('Starting Guest session');
 
 		const initialAdapters: { adapterId: number, tests?: TestSuiteInfo }[] = await this.sharedServiceProxy.request('adapters', []);
 		this.log.info(`Received adapters response: ${JSON.stringify(initialAdapters)}`);
@@ -75,10 +83,13 @@ export class GuestSessionManager {
 	}
 
 	private endSession(): void {
+
 		this.adapterProxies.forEach(proxy => {
 			this.testHub.unregisterTestAdapter(proxy);
 		});
 		this.adapterProxies.clear();
+
+		this.log.info('Guest session finished');
 	}
 }
 
