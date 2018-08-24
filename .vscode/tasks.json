@@ -3,7 +3,7 @@
     "tasks": [
         {
             "type": "typescript",
-            "tsconfig": "vscode-share-test-explorer/tsconfig.json",
+            "tsconfig": "vscode-test-explorer-liveshare/tsconfig.json",
             "option": "watch",
             "problemMatcher": [
                 "$tsc-watch"
