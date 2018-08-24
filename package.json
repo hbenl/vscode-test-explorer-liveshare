@@ -42,7 +42,7 @@
   ],
   "dependencies": {
     "tslib": "^1.9.3",
-    "vscode-test-adapter-api": "^1.0.0",
+    "vscode-test-adapter-api": "^1.0.1",
     "vsls": "^0.3.426"
   },
   "devDependencies": {

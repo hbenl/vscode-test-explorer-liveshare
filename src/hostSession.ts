@@ -152,7 +152,7 @@ export class HostSessionManager implements TestController {
 
 	private convertTestRunEvent(event: TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent): any {
 		if (event.type === 'started') {
-			return { ...event, tests: this.convertInfo(event.tests) };
+			return { ...event, tests: event.tests };
 		} else if ((event.type === 'suite') && (typeof event.suite === 'object')) {
 			return { ...event, suite: this.convertInfo(event.suite) };
 		} else if ((event.type === 'test') && (typeof event.test === 'object')) {
