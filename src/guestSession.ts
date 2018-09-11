@@ -74,6 +74,7 @@ export class GuestSessionManager {
 			const proxy = new TestAdapterProxy(adapter.adapterId, this.sharedServiceProxy, this.log);
 			this.adapterProxies.set(adapter.adapterId, proxy);
 			this.testHub.registerTestAdapter(proxy);
+			proxy.ignoreLoadRequests = false;
 
 			proxy.testsEmitter.fire({ type: 'started' });
 			if (adapter.hasOwnProperty('tests')) {
@@ -97,6 +98,7 @@ class TestAdapterProxy implements TestAdapter {
 
 	public readonly testsEmitter = new vscode.EventEmitter<TestLoadStartedEvent | TestLoadFinishedEvent>();
 	public readonly testStatesEmitter = new vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>();
+	public ignoreLoadRequests = true;
 
 	constructor(
 		private readonly adapterId: number,
@@ -105,8 +107,12 @@ class TestAdapterProxy implements TestAdapter {
 	) {}
 
 	async load(): Promise<void> {
-		this.log.debug(`Passing on load request for adapter #${this.adapterId}`);
-		return this.sharedService.request('load', [ this.adapterId ]);
+		if (this.ignoreLoadRequests) {
+			this.log.debug(`Ignoring load request for adapter #${this.adapterId}`);
+		} else {
+			this.log.debug(`Passing on load request for adapter #${this.adapterId}`);
+			return this.sharedService.request('load', [ this.adapterId ]);
+		}
 	}
 
 	async run(tests: string[]): Promise<void> {
