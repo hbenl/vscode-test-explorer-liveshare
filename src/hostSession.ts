@@ -24,7 +24,7 @@ export class HostSessionManager implements TestController {
 			const adapterIds = [ ...this.adapters.keys() ];
 			const response = adapterIds.map(adapterId => {
 				if (this.tests.has(adapterId)) {
-					return { adapterId, tests: this.tests.get(adapterId) }
+					return { adapterId, tests: this.tests.get(adapterId) || null }
 				} else {
 					return { adapterId };
 				}

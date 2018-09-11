@@ -66,7 +66,7 @@ export class GuestSessionManager {
 
 		this.log.info('Starting Guest session');
 
-		const initialAdapters: { adapterId: number, tests?: TestSuiteInfo }[] = await this.sharedServiceProxy.request('adapters', []);
+		const initialAdapters: { adapterId: number, tests: TestSuiteInfo | null }[] = await this.sharedServiceProxy.request('adapters', []);
 		this.log.info(`Received adapters response: ${JSON.stringify(initialAdapters)}`);
 
 		for (const adapter of initialAdapters) {
@@ -77,7 +77,7 @@ export class GuestSessionManager {
 
 			proxy.testsEmitter.fire({ type: 'started' });
 			if (adapter.hasOwnProperty('tests')) {
-				proxy.testsEmitter.fire({ type: 'finished', suite: adapter.tests });
+				proxy.testsEmitter.fire({ type: 'finished', suite: adapter.tests || undefined });
 			}
 		}
 	}
