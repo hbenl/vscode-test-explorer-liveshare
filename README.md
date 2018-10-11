@@ -5,11 +5,7 @@ This extension adds support for [VS Live Share](https://aka.ms/vsls) to the
 
 ## Configuration
 
-The extension needs to be installed by all participants of the VS Live Share session.
-Furthermore, all participants must set `liveshare.features` to `experimental` in their user settings
-(VS Live Share currently requires this feature flag for extensions to participate in the session).
-
-Now the guests of a VS Live Share session will be able to see and interact with the host's tests.
+The extension needs to be installed by all participants of the VS Live Share session. Now the guests of a VS Live Share session will be able to see and interact with the host's tests.
 
 ## Known limitations
 
