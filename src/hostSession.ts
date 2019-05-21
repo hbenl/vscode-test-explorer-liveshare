@@ -46,7 +46,9 @@ export class HostSessionManager implements TestController {
 
 		this.sharedService.onRequest('debug', (args) => {
 			this.log.debug('Received debug request...');
-			return this.adapterRequest(args, adapter => adapter.debug(args[1]));
+			return this.adapterRequest(args, adapter => {
+				if (adapter.debug) adapter.debug(args[1]);
+			});
 		});
 
 		this.sharedService.onRequest('cancel', (args) => {
