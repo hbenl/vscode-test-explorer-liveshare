@@ -27,7 +27,6 @@
   ],
   "main": "out/main.js",
   "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install",
     "reinstall": "rimraf node_modules package-lock.json && npm install",
     "clean": "rimraf out vscode-share-test-explorer-*.vsix",
     "build": "tsc",
@@ -41,14 +40,15 @@
     "ms-vsliveshare.vsliveshare"
   ],
   "dependencies": {
-    "tslib": "^1.9.3",
+    "tslib": "^1.10.0",
     "vscode-test-adapter-api": "^1.7.0",
     "vsls": "^0.3.1291"
   },
   "devDependencies": {
-    "typescript": "^3.5.1",
-    "vsce": "^1.62.0",
-    "vscode": "^1.1.34"
+    "@types/vscode": "~1.25.0",
+    "rimraf": "^2.6.3",
+    "typescript": "^3.5.3",
+    "vsce": "^1.65.0"
   },
   "engines": {
     "vscode": "^1.25.0"
