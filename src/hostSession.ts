@@ -82,13 +82,14 @@ export class HostSessionManager implements TestController {
 				this.tests.set(adapterId, convertedEvent.suite);
 			}
 
-			this.log.info(`Passing on TestLoad event for Adapter #${adapterId}: ${JSON.stringify(event)}`);
+			this.log.info(`Passing on TestLoad event for Adapter #${adapterId}: ${JSON.stringify(convertedEvent)}`);
 			this.sharedService.notify('tests', { adapterId, event: convertedEvent });
 		}));
 
 		subscriptions.push(adapter.testStates(event => {
-			this.log.info(`Passing on TestRun event for Adapter #${adapterId}: ${JSON.stringify(event)}`);
-			this.sharedService.notify('testState', { adapterId, event: this.convertTestRunEvent(event) });
+			const convertedEvent = this.convertTestRunEvent(event);
+			this.log.info(`Passing on TestRun event for Adapter #${adapterId}: ${JSON.stringify(convertedEvent)}`);
+			this.sharedService.notify('testState', { adapterId, event: convertedEvent });
 		}));
 
 		this.adapterSubscriptions.set(adapterId, subscriptions);
@@ -177,6 +178,16 @@ export class HostSessionManager implements TestController {
 
 		const children = (info.type === 'suite') ? info.children.map(child => this.convertInfo(child)) : undefined;
 
-		return { ...<any>info, file, children };
+		return { 
+			type: <any>info.type,
+			id: info.id,
+			label: info.label,
+			description: info.description,
+			tooltip: info.tooltip,
+			file: file,
+			line: info.line,
+			children: children,
+			skipped: (<TestInfo>info).skipped,
+		};
 	}
 }
